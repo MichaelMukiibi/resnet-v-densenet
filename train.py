@@ -69,7 +69,7 @@ def main():
     else:
         model = DenseNet(num_classes=10, num_blocks=3, in_channels=64, growth_rate=12, rngs=rngs)
         
-    optimizer = nnx.Optimizer(model, optax.adam(args.lr))
+    optimizer = nnx.Optimizer(model, optax.adam(args.lr), wrt=nnx.Param)
     metrics = nnx.MultiMetric(
         loss=nnx.metrics.Average(),
         accuracy=nnx.metrics.Accuracy()
