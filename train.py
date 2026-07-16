@@ -1,40 +1,15 @@
-import os
-import sys
-import subprocess
-import tempfile
+from models.resnet import ResNet
+from models.densenet import DenseNet
+from utils.dataset import get_cifar10_datasets
 
-import argparse
 import jax
 import jax.numpy as jnp
 from flax import nnx
 import optax
 import wandb
 from dotenv import load_dotenv
-import tensorflow as tf
 
-try:
-    import google.protobuf.runtime_version as pb_rt
-    pb_rt.ValidateProtobufRuntimeVersion = lambda *args, **kwargs: None
-    print("Protobuf version enforcement safely bypassed.")
-except ImportError:
-    pass
-
-print("Cloning repo...")
-REPO_URL = "https://github.com/michaelmukiibi/resnet-v-densenet.git"
-
-# 2. Create a guaranteed unique, isolated directory name for this run
-CLONE_DIR = tempfile.mkdtemp(prefix="colab_run_")
-
-# 3. Clone the latest code directly into the unique folder
-subprocess.run(["git", "clone", "--depth", "1", REPO_URL, CLONE_DIR], check=True)
-
-# 4. Insert the unique folder at the absolute front of Python's search path
-sys.path.insert(0, CLONE_DIR)
-
-from models.resnet import ResNet
-from models.densenet import DenseNet
-from utils.dataset import get_cifar10_datasets
-
+# Command Line Argument Parser
 def parse_args():
     parser = argparse.ArgumentParser(description="Train JAX/Flax NNX models with W&B logging")
     parser.add_argument("--model", type=str, choices=["resnet", "densenet"], default="resnet")
@@ -45,9 +20,10 @@ def parse_args():
     parser.add_argument("--project", type=str, default="resnet-vs-densenet")
     return parser.parse_args()
 
+# Forward Loss and Step Functions
 def loss_fn(model, batch):
     logits = model(batch['image'])
-    loss = optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=batch['label']).mean()
+    loss = optax.losses.softmax_cross_entropy_with_integer_labels(logits=logits, labels=batch['label']).mean()
     return loss, logits
 
 @nnx.jit
@@ -62,6 +38,7 @@ def eval_step(model, metrics, batch):
     loss, logits = loss_fn(model, batch)
     metrics.update(loss=loss, logits=logits, labels=batch['label'])
 
+# Main Loop Orchestration
 def main():
     args = parse_args()
     
@@ -83,7 +60,7 @@ def main():
         }
     )
 
-    # Prepare loaders and seed
+    # Initialize data stream and key generation space
     train_ds, test_ds = get_cifar10_datasets(args.batch_size)
     rngs = nnx.Rngs(42)
     
@@ -98,7 +75,7 @@ def main():
         accuracy=nnx.metrics.Accuracy()
     )
 
-    # Establish model views to properly isolate train/eval BatchNorm statistics
+    # Decouple stateful BatchNorm behaviors for train/eval cycles
     train_model = nnx.view(model, use_running_average=False)
     eval_model = nnx.view(model, use_running_average=True)
 
@@ -108,13 +85,11 @@ def main():
         metrics.reset()
         for batch in train_ds.as_numpy_iterator():
             train_step(train_model, optimizer, metrics, batch)
-        
         train_res = metrics.compute()
         
         metrics.reset()
         for batch in test_ds.as_numpy_iterator():
             eval_step(eval_model, metrics, batch)
-            
         eval_res = metrics.compute()
         
         t_loss, t_acc = float(train_res['loss']), float(train_res['accuracy'])
