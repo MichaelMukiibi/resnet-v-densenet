@@ -1,24 +1,35 @@
-import tensorflow as tf
-import tensorflow_datasets as tfds
+from datasets import load_dataset
+import numpy as np
+
+class HFDatasetIterator:
+    def __init__(self, hf_dataset_split, batch_size, shuffle=False):
+        self.ds = hf_dataset_split.to_iterable_dataset()
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        
+    def as_numpy_iterator(self):
+        ds = self.ds
+        if self.shuffle:
+            ds = ds.shuffle(seed=42, buffer_size=10000)
+        
+        for batch in ds.iter(batch_size=self.batch_size, drop_last_batch=True):
+            images = np.array(batch['img'], dtype=np.float32) / 255.0
+
+            # Standard CIFAR-10 channel normalization statistics
+            mean = np.array([0.4914, 0.4822, 0.4465], dtype=np.float32)
+            std = np.array([0.2023, 0.1994, 0.2010], dtype=np.float32)
+            
+            images = (images - mean) / std
+            
+            yield {
+                'image': images,
+                'label': np.array(batch['label'], dtype=np.int32)
+            }
 
 def get_cifar10_datasets(batch_size: int = 64):
-    # Prevent TF from acquiring all GPU memory during training
-    tf.config.set_visible_devices([], 'GPU')
+    ds = load_dataset("cifar10", trust_remote_code=True)
     
-    def preprocess(x):
-        image = tf.cast(x['image'], tf.float32) / 255.0
-        # Normalize with standard CIFAR-10 statistics
-        mean = tf.constant([0.4914, 0.4822, 0.4465])
-        std = tf.constant([0.2023, 0.1994, 0.2010])
-        image = (image - mean) / std
-        return {'image': image, 'label': x['label']}
-
-    train_ds = tfds.load('cifar10', split='train', as_supervised=False)
-    train_ds = train_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-    train_ds = train_ds.shuffle(10000).batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
-
-    test_ds = tfds.load('cifar10', split='test', as_supervised=False)
-    test_ds = test_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-    test_ds = test_ds.batch(batch_size, drop_remainder=False).prefetch(tf.data.AUTOTUNE)
-
+    train_ds = HFDatasetIterator(ds['train'], batch_size, shuffle=True)
+    test_ds = HFDatasetIterator(ds['test'], batch_size, shuffle=False)
+    
     return train_ds, test_ds
