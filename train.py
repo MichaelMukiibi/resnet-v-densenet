@@ -1,4 +1,8 @@
 import os
+import sys
+import subprocess
+import tempfile
+
 import argparse
 import jax
 import jax.numpy as jnp
@@ -6,20 +10,26 @@ from flax import nnx
 import optax
 import wandb
 from dotenv import load_dotenv
-import shutil
-import subprocess
+import tensorflow as tf
 
-# Define the target subdirectory for the cloned repo
-CLONE_DIR = os.path.join(os.getcwd(), "cloned_repo")
+try:
+    import google.protobuf.runtime_version as pb_rt
+    pb_rt.ValidateProtobufRuntimeVersion = lambda *args, **kwargs: None
+    print("Protobuf version enforcement safely bypassed.")
+except ImportError:
+    pass
 
-# Clone the repository only if it doesn't already exist in the runtime
-if not os.path.exists(CLONE_DIR):
-    print("Cloning repository to resolve modular relative imports...")
-    REPO_URL = "https://github.com/michaelmukiibi/resnet-v-densenet.git"
-    subprocess.run(["git", "clone", "--depth", "1", REPO_URL, CLONE_DIR], check=True)
+print("Cloning repo...")
+REPO_URL = "https://github.com/michaelmukiibi/resnet-v-densenet.git"
 
-# Append the cloned repository root directory to Python's module search path
-sys.path.append(CLONE_DIR)
+# 2. Create a guaranteed unique, isolated directory name for this run
+CLONE_DIR = tempfile.mkdtemp(prefix="colab_run_")
+
+# 3. Clone the latest code directly into the unique folder
+subprocess.run(["git", "clone", "--depth", "1", REPO_URL, CLONE_DIR], check=True)
+
+# 4. Insert the unique folder at the absolute front of Python's search path
+sys.path.insert(0, CLONE_DIR)
 
 from models.resnet import ResNet
 from models.densenet import DenseNet
