@@ -14,11 +14,9 @@ class HFDatasetIterator:
         
         for batch in ds.iter(batch_size=self.batch_size, drop_last_batch=True):
             images = np.array(batch['img'], dtype=np.float32) / 255.0
-
-            # Standard CIFAR-10 channel normalization statistics
+            
             mean = np.array([0.4914, 0.4822, 0.4465], dtype=np.float32)
             std = np.array([0.2023, 0.1994, 0.2010], dtype=np.float32)
-            
             images = (images - mean) / std
             
             yield {
