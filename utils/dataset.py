@@ -1,5 +1,5 @@
-import tensorflow_datasets as tfds
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 def get_cifar10_datasets(batch_size: int = 64):
     # Prevent TF from acquiring all GPU memory during training
