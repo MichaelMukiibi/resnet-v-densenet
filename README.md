@@ -15,7 +15,7 @@ resnet-v-densenet/
 │   └── densenet.py       # DenseNet architecture module
 └── utils/
     ├── __init__.py
-    └── dataset.py        # TFDS CIFAR-10 data loading pipeline
+    └── dataset.py        # HuggingFace Datasets CIFAR-10 data loading pipeline
 ```
 
 ## Setup Instructions
