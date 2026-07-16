@@ -1,0 +1,8 @@
+jax
+jaxlib
+flax>=0.10.0
+optax
+tensorflow-datasets
+tensorflow
+wandb
+python-dotenv
