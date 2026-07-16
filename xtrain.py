@@ -37,7 +37,7 @@ class HFDatasetIterator:
             }
 
 def get_cifar10_datasets(batch_size: int = 64):
-    ds = load_dataset("cifar10", trust_remote_code=True)
+    ds = load_dataset("uoft-cs/cifar10")
     train_ds = HFDatasetIterator(ds['train'], batch_size, shuffle=True)
     test_ds = HFDatasetIterator(ds['test'], batch_size, shuffle=False)
     return train_ds, test_ds
