@@ -39,7 +39,7 @@ Run the following command to kick off the ResNet training loop:
 ```bash
 source .env
 
-colab run --gpu t4 -s resnet-cifar10 xtrain.py --model resnet --epochs 10 --batch_size 64 --lr 0.001 --wand_key $WANDB_API_KEY
+colab run --gpu t4 -s resnet-cifar10 xtrain.py --model resnet --epochs 10 --batch_size 64 --lr 0.001 --wand_key $WANDB_API_KEY --hf_token $HF_TOKEN
 ```
 
 ### Train DenseNet
@@ -47,7 +47,7 @@ Run the following command to kick off the DenseNet training loop:
 ```bash
 source .env
 
-colab run --gpu t4 -s densenet-cifar10 xtrain.py --model densenet --epochs 10 --batch_size 64 --lr 0.001 --wand_key $WANDB_API_KEY
+colab run --gpu t4 -s densenet-cifar10 xtrain.py --model densenet --epochs 10 --batch_size 64 --lr 0.001 --wand_key $WANDB_API_KEY --hf_token $HF_TOKEN
 ```
 
 ## CLI Configuration Arguments
