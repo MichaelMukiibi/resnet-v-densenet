@@ -9,37 +9,17 @@ from dotenv import load_dotenv
 import shutil
 import subprocess
 
-print("Initializing runner: Fetching repository modules...")
-REPO_URL = "https://github.com/michaelmukiibi/resnet-v-densenet.git"
-TEMP_DIR = "temp_bootstrap_repo"
+# Define the target subdirectory for the cloned repo
+CLONE_DIR = os.path.join(os.getcwd(), "cloned_repo")
 
-# Clean up any leftover temp folders from previous runs
-if os.path.exists(TEMP_DIR):
-    shutil.rmtree(TEMP_DIR)
+# Clone the repository only if it doesn't already exist in the runtime
+if not os.path.exists(CLONE_DIR):
+    print("Cloning repository to resolve modular relative imports...")
+    REPO_URL = "https://github.com/michaelmukiibi/resnet-v-densenet.git"
+    subprocess.run(["git", "clone", "--depth", "1", REPO_URL, CLONE_DIR], check=True)
 
-# Clone the remote repository
-subprocess.run(["git", "clone", REPO_URL, TEMP_DIR], check=True)
-
-# Copy all files and folders to the current working directory
-for item in os.listdir(TEMP_DIR):
-    source_path = os.path.join(TEMP_DIR, item)
-    destination_path = os.path.join(".", item)
-    
-    if item == ".git":
-        continue
-        
-    if os.path.isdir(source_path):
-        if os.path.exists(destination_path):
-            shutil.rmtree(destination_path)
-        shutil.copytree(source_path, destination_path)
-    else:
-        shutil.copy2(source_path, destination_path)
-
-# Remove the temporary clone folder
-shutil.rmtree(TEMP_DIR)
-
-# Force resolve the system path to the current root directory
-sys.path.append(os.getcwd())
+# Append the cloned repository root directory to Python's module search path
+sys.path.append(CLONE_DIR)
 
 from models.resnet import ResNet
 from models.densenet import DenseNet
