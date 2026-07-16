@@ -133,7 +133,7 @@ def loss_fn(model, batch):
 def train_step(model, optimizer, metrics, batch):
     grad_fn = nnx.value_and_grad(loss_fn, has_aux=True)
     (loss, logits), grads = grad_fn(model, batch)
-    optimizer.update(grads)
+    optimizer.update(grads, model)
     metrics.update(loss=loss, logits=logits, labels=batch['label'])
 
 @nnx.jit
@@ -183,7 +183,7 @@ def main():
     else:
         model = DenseNet(num_classes=10, num_blocks=3, in_channels=64, growth_rate=12, rngs=rngs)
         
-    optimizer = nnx.Optimizer(model, optax.adam(args.lr))
+    optimizer = nnx.Optimizer(model, optax.adam(args.lr), wrt=nnx.Param)
     metrics = nnx.MultiMetric(
         loss=nnx.metrics.Average(),
         accuracy=nnx.metrics.Accuracy()
