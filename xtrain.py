@@ -8,6 +8,7 @@ import optax
 import wandb
 from dotenv import load_dotenv
 from datasets import load_dataset
+from huggingface_hub import login
 
 # ==========================================
 # 1. Dataset Pipeline (Hugging Face)
@@ -36,8 +37,9 @@ class HFDatasetIterator:
                 'label': np.array(batch['label'], dtype=np.int32)
             }
 
-def get_cifar10_datasets(batch_size: int = 64):
-    ds = load_dataset("uoft-cs/cifar10")
+def get_cifar10_datasets(batch_size: int = 64, token: str = None):
+    # Pass token to load_dataset to handle restricted or private dataset policies
+    ds = load_dataset("uoft-cs/cifar10", trust_remote_code=True, token=token)
     train_ds = HFDatasetIterator(ds['train'], batch_size, shuffle=True)
     test_ds = HFDatasetIterator(ds['test'], batch_size, shuffle=False)
     return train_ds, test_ds
@@ -118,6 +120,7 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--wand_key", type=str, default="", help="W&B API Key passed via CLI")
+    parser.add_argument("--hf_token", type=str, default="", help="Hugging Face API Token")
     parser.add_argument("--project", type=str, default="resnet-vs-densenet")
     return parser.parse_args()
 
@@ -144,6 +147,11 @@ def eval_step(model, metrics, batch):
 
 def main():
     args = parse_args()
+
+    # Authenticate with Hugging Face Hub if token is supplied
+    if args.hf_token:
+        print("Logging in to Hugging Face...")
+        login(token=args.hf_token)
     
     # Authenticate with Weights & Biases
     if args.wand_key:
@@ -163,7 +171,11 @@ def main():
         }
     )
 
-    train_ds, test_ds = get_cifar10_datasets(args.batch_size)
+    # Load data with the supplied Hugging Face Token
+    train_ds, test_ds = get_cifar10_datasets(
+        batch_size=args.batch_size, 
+        token=args.hf_token if args.hf_token else None
+    )   
     rngs = nnx.Rngs(42)
     
     if args.model == "resnet":
