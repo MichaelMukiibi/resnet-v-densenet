@@ -39,7 +39,7 @@ class HFDatasetIterator:
 
 def get_cifar10_datasets(batch_size: int = 64, token: str = None):
     # Pass token to load_dataset to handle restricted or private dataset policies
-    ds = load_dataset("uoft-cs/cifar10", trust_remote_code=True, token=token)
+    ds = load_dataset("uoft-cs/cifar10", token=token)
     train_ds = HFDatasetIterator(ds['train'], batch_size, shuffle=True)
     test_ds = HFDatasetIterator(ds['test'], batch_size, shuffle=False)
     return train_ds, test_ds
